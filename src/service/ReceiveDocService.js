@@ -37,6 +37,40 @@ class ReceiveDocService {
         }
     }
 
+    // ดึงรายการใบรับสินค้าตาม status
+    async getReceiveDocListByStatus(search = '', fromdate = '', todate = '', status = 0, page = 1, size = 20) {
+        try {
+            const provider = AuthService.getProviderName();
+            const dbname = AuthService.getDatabaseName();
+
+            const response = await axios.get(`${API_URL}/getReceiveDocList`, {
+                params: {
+                    provider,
+                    dbname,
+                    search,
+                    fromdate,
+                    todate,
+                    status,
+                    page,
+                    size
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching receive doc list by status:', error);
+            return {
+                success: false,
+                message: error.response?.data?.message || 'Failed to fetch receive documents',
+                data: [],
+                total: 0,
+                page: 1,
+                size: 20,
+                totalPages: 0
+            };
+        }
+    }
+
     // ดึงรายการ SO
     async getSODocList(search = '', fromdate = '', todate = '', page = 1, size = 20) {
         try {
@@ -178,6 +212,80 @@ class ReceiveDocService {
             return {
                 success: false,
                 message: error.response?.data?.message || 'Failed to create receive document'
+            };
+        }
+    }
+
+    // ดึงรายละเอียดใบรับสินค้า (SO items และ received items)
+    async getReceiveDocDetail(docno) {
+        try {
+            const provider = AuthService.getProviderName();
+            const dbname = AuthService.getDatabaseName();
+
+            const response = await axios.get(`${API_URL}/getReceiveDocDetail`, {
+                params: {
+                    provider,
+                    dbname,
+                    docno
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching receive doc detail:', error);
+            return {
+                success: false,
+                message: error.response?.data?.message || 'Failed to fetch receive document detail',
+                details_so: [],
+                details_receive: []
+            };
+        }
+    }
+
+    // ค้นหาสินค้า (รองรับการสแกน barcode)
+    async getItemSearch(search) {
+        try {
+            const provider = AuthService.getProviderName();
+            const dbname = AuthService.getDatabaseName();
+
+            const response = await axios.get(`${API_URL}/getItemSearch`, {
+                params: {
+                    provider,
+                    dbname,
+                    search
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Error searching item:', error);
+            return {
+                success: false,
+                message: error.response?.data?.message || 'Failed to search item',
+                data: []
+            };
+        }
+    }
+
+    // บันทึกการรับสินค้า (delete -> insert)
+    async updateReceiveDoc(docno, details) {
+        try {
+            const provider = AuthService.getProviderName();
+            const dbname = AuthService.getDatabaseName();
+
+            const body = {
+                docno: docno,
+                details: details
+            };
+
+            const response = await axios.post(`${API_URL}/updateReceiveDoc?provider=${provider}&dbname=${dbname}`, body);
+
+            return response.data;
+        } catch (error) {
+            console.error('Error updating receive doc:', error);
+            return {
+                success: false,
+                message: error.response?.data?.message || 'Failed to update receive document'
             };
         }
     }

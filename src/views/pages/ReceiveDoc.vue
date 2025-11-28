@@ -1,14 +1,15 @@
 <script setup>
 import ReceiveDocService from '@/service/ReceiveDocService';
-import { FilterMatchMode } from '@primevue/core/api';
+import ReceiveDocTable from '@/components/ReceiveDocTable.vue';
 import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 const toast = useToast();
 const confirmDialog = useConfirm();
-const dt = ref();
+const router = useRouter();
 const receiveDocs = ref([]);
 const loading = ref(false);
 const searchQuery = ref('');
@@ -33,10 +34,6 @@ const soCurrentPage = ref(1);
 const soPageSize = ref(20);
 const soTotalRecords = ref(0);
 const soTotalPages = ref(0);
-
-const filters = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
-});
 
 onMounted(async () => {
     await loadReceiveDocs();
@@ -77,7 +74,7 @@ async function handleSearch() {
 }
 
 function onPageChange(event) {
-    currentPage.value = event.page + 1;
+    currentPage.value = event.page;
     pageSize.value = event.rows;
     loadReceiveDocs();
 }
@@ -260,54 +257,6 @@ async function handleSendApprove(docData) {
     }
 }
 
-async function confirmCloseJob(docData) {
-    confirmDialog.require({
-        message: `ต้องการปิดงานใบรับสินค้า ${docData.doc_no} หรือไม่?`,
-        header: 'ยืนยันการปิดงาน',
-        icon: 'pi pi-check-circle',
-        acceptLabel: 'ยืนยัน',
-        rejectLabel: 'ยกเลิก',
-        acceptClass: 'p-button-success',
-        rejectClass: 'p-button-secondary p-button-outlined',
-        accept: async () => {
-            await handleCloseJob(docData);
-        }
-    });
-}
-
-async function handleCloseJob(docData) {
-    loading.value = true;
-    try {
-        const result = await ReceiveDocService.sendCloseJob(docData.doc_no);
-
-        if (result.success) {
-            toast.add({
-                severity: 'success',
-                summary: 'Success',
-                detail: 'ปิดงานสำเร็จ',
-                life: 3000
-            });
-            await loadReceiveDocs();
-        } else {
-            toast.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: result.message || 'Failed to close job',
-                life: 3000
-            });
-        }
-    } catch (error) {
-        toast.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'An error occurred while closing job',
-            life: 3000
-        });
-    } finally {
-        loading.value = false;
-    }
-}
-
 async function confirmDelete(docData) {
     confirmDialog.require({
         message: `ต้องการลบใบรับสินค้า ${docData.doc_no} หรือไม่?`,
@@ -354,12 +303,6 @@ async function handleDelete(docData) {
     } finally {
         loading.value = false;
     }
-}
-
-function canApprove(docData) {
-    const soQty = parseInt(docData.so_qty) || 0;
-    const receiveQty = parseInt(docData.receive_qty) || 0;
-    return soQty <= receiveQty && docData.can_approve === '1';
 }
 </script>
 
@@ -411,111 +354,20 @@ function canApprove(docData) {
                 </template>
             </Toolbar>
 
-            <DataTable
-                ref="dt"
-                v-model:filters="filters"
-                :value="receiveDocs"
+            <ReceiveDocTable
+                :data="receiveDocs"
                 :loading="loading"
-                dataKey="doc_no"
-                :lazy="true"
-                :paginator="true"
-                :rows="pageSize"
                 :totalRecords="totalRecords"
-                :rowsPerPageOptions="[10, 20, 50, 100]"
-                :rowHover="true"
-                stripedRows
-                paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                currentPageReportTemplate="แสดง {first} ถึง {last} จาก {totalRecords} รายการ"
-                @page="onPageChange"
-            >
-                <template #empty>
-                    <div class="flex flex-col items-center justify-center py-6">
-                        <i class="pi pi-inbox text-4xl text-muted-color mb-4"></i>
-                        <span class="text-muted-color">ไม่พบข้อมูล</span>
-                    </div>
-                </template>
-                <template #loading>
-                    <div class="flex items-center justify-center py-6">
-                        <i class="pi pi-spin pi-spinner text-2xl mr-2"></i>
-                        <span>กำลังโหลดข้อมูล...</span>
-                    </div>
-                </template>
-
-                <Column field="doc_no" header="เลขที่เอกสาร" :sortable="true" style="min-width: 14rem">
-                    <template #body="{ data }">
-                        <span class="font-semibold text-primary">{{ data.doc_no }}</span>
-                    </template>
-                </Column>
-
-                <Column field="doc_ref" header="อ้างอิง SO" :sortable="true" style="min-width: 12rem">
-                    <template #body="{ data }">
-                        <Tag v-if="data.doc_ref" :value="data.doc_ref" severity="info" />
-                        <span v-else class="text-muted-color">-</span>
-                    </template>
-                </Column>
-
-                <Column field="doc_date" header="วันที่" :sortable="true" style="min-width: 10rem">
-                    <template #body="{ data }">
-                        <div class="flex items-center gap-2">
-                            <i class="pi pi-calendar text-muted-color"></i>
-                            <span>{{ formatDate(data.doc_date) }}</span>
-                        </div>
-                    </template>
-                </Column>
-
-                <Column field="cust_name" header="ลูกค้า" :sortable="true" style="min-width: 12rem">
-                    <template #body="{ data }">
-                        <div class="flex items-center gap-2">
-                            <i class="pi pi-user text-muted-color"></i>
-                            <span>{{ data.cust_name || '-' }}</span>
-                        </div>
-                    </template>
-                </Column>
-
-                <Column field="sale_name" header="พนักงานขาย" :sortable="true" style="min-width: 12rem">
-                    <template #body="{ data }">
-                        {{ data.sale_name || '-' }}
-                    </template>
-                </Column>
-
-                <Column field="branch_code" header="สาขา" :sortable="true" style="min-width: 8rem">
-                    <template #body="{ data }">
-                        <Tag v-if="data.branch_code" :value="data.branch_code" severity="secondary" />
-                        <span v-else class="text-muted-color">-</span>
-                    </template>
-                </Column>
-
-                <Column field="remark" header="หมายเหตุ" style="min-width: 12rem">
-                    <template #body="{ data }">
-                        <span v-if="data.remark" v-tooltip.top="data.remark" class="max-w-[200px] truncate block">{{ data.remark }}</span>
-                        <span v-else class="text-muted-color">-</span>
-                    </template>
-                </Column>
-
-                <Column field="receive_qty" header="จำนวนรับ" :sortable="true" style="min-width: 8rem">
-                    <template #body="{ data }">
-                        <Tag :value="data.receive_qty?.toString() || '0'" severity="success" />
-                    </template>
-                </Column>
-
-                <Column header="จัดการ" :exportable="false" style="min-width: 16rem">
-                    <template #body="slotProps">
-                        <div class="flex flex-wrap gap-2">
-                            <Button
-                                icon="pi pi-send"
-                                label="ส่งอนุมัติ"
-                                size="small"
-                                severity="info"
-                                :disabled="!canApprove(slotProps.data)"
-                                @click="confirmSendApprove(slotProps.data)"
-                                v-tooltip.top="canApprove(slotProps.data) ? 'ส่งอนุมัติ' : 'รอรับสินค้าให้ครบก่อน'"
-                            />
-                            <Button icon="pi pi-check-circle" label="ปิดงาน" size="small" severity="success" @click="confirmCloseJob(slotProps.data)" v-tooltip.top="'ปิดงาน'" />
-                            <Button icon="pi pi-trash" label="ลบ" size="small" severity="danger" @click="confirmDelete(slotProps.data)" v-tooltip.top="'ลบใบรับ'" />
-                        </div>
-                    </template>
-                </Column>
-            </DataTable>
+                :currentPage="currentPage"
+                :pageSize="pageSize"
+                mode="default"
+                :enableRowClick="true"
+                @page-change="onPageChange"
+                @row-click="(data) => router.push({ name: 'receiveitem', params: { docno: data.doc_no } })"
+                @receive-item="(data) => router.push({ name: 'receiveitem', params: { docno: data.doc_no } })"
+                @send-approve="confirmSendApprove"
+                @delete="confirmDelete"
+            />
         </div>
 
         <!-- Dialog สร้างใบรับสินค้า -->

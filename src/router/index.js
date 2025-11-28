@@ -12,8 +12,7 @@ const router = createRouter({
             children: [
                 {
                     path: '/',
-                    name: 'dashboard',
-                    component: () => import('@/views/Dashboard.vue')
+                    redirect: '/pages/receivedoc'
                 },
                 {
                     path: '/uikit/formlayout',
@@ -125,6 +124,24 @@ const router = createRouter({
                     name: 'receivedoc',
                     meta: { requiresAuth: true, requiresReceivePermission: true },
                     component: () => import('@/views/pages/ReceiveDoc.vue')
+                },
+                {
+                    path: '/pages/receiveitem/:docno',
+                    name: 'receiveitem',
+                    meta: { requiresAuth: true, requiresReceivePermission: true },
+                    component: () => import('@/views/pages/ReceiveItem.vue')
+                },
+                {
+                    path: '/pages/closejobreceive',
+                    name: 'closejobreceive',
+                    meta: { requiresAuth: true, requiresReceivePermission: true },
+                    component: () => import('@/views/pages/CloseJobReceive.vue')
+                },
+                {
+                    path: '/pages/receivehistory',
+                    name: 'receivehistory',
+                    meta: { requiresAuth: true, requiresReceivePermission: true },
+                    component: () => import('@/views/pages/ReceiveHistory.vue')
                 }
             ]
         },
@@ -169,8 +186,8 @@ router.beforeEach((to, from, next) => {
         // ถ้าหน้านั้นต้อง login แต่ยังไม่ได้ login ให้ redirect ไปหน้า login
         next({ name: 'login' });
     } else if (to.name === 'login' && isAuthenticated) {
-        // ถ้า login แล้วแต่พยายามเข้าหน้า login อีก ให้ redirect ไป dashboard
-        next({ name: 'dashboard' });
+        // ถ้า login แล้วแต่พยายามเข้าหน้า login อีก ให้ redirect ไป receivedoc
+        next({ name: 'receivedoc' });
     } else if (requiresSuperAdmin && !AuthService.isSuperAdmin()) {
         // ถ้าหน้านั้นต้อง SUPERADMIN แต่ไม่ใช่ SUPERADMIN ให้ redirect ไปหน้า access denied
         next({ name: 'accessDenied' });

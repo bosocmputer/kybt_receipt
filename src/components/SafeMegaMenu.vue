@@ -27,7 +27,7 @@ const handleError = (error, context = 'unknown') => {
     console.warn(`SafeMegaMenu [${context}]:`, error);
     isError.value = true;
     errorMessage.value = `MegaMenu error (${context}): ${error.message || error}`;
-    
+
     // Prevent error from propagating
     return false;
 };
@@ -38,12 +38,12 @@ const safeAlignOverlay = () => {
         if (!menuRef.value?.$el) {
             return handleError('Element not found', 'alignOverlay');
         }
-        
+
         const element = menuRef.value.$el;
         if (!element || typeof element.style === 'undefined') {
             return handleError('Element style not accessible', 'alignOverlay');
         }
-        
+
         // Proceed with alignment
         return true;
     } catch (error) {
@@ -57,7 +57,7 @@ const handleOrientationChange = () => {
         if (!menuRef.value) {
             return;
         }
-        
+
         // Add small delay to ensure DOM is ready
         nextTick(() => {
             setTimeout(() => {
@@ -76,9 +76,9 @@ const initializeErrorHandling = () => {
         const handleResize = () => {
             handleOrientationChange();
         };
-        
+
         window.addEventListener('resize', handleResize);
-        
+
         // Store cleanup function
         return () => {
             window.removeEventListener('resize', handleResize);
@@ -95,10 +95,10 @@ onMounted(() => {
         setTimeout(() => {
             handleOrientationChange();
         }, 100);
-        
+
         // Initialize error handling
         const cleanup = initializeErrorHandling();
-        
+
         // Store cleanup for unmount
         if (cleanup) {
             onUnmounted(() => {
@@ -129,27 +129,13 @@ const retryButton = ref(null);
                     <i class="pi pi-exclamation-triangle text-orange-500"></i>
                     <span class="text-orange-800 font-medium">MegaMenu Error</span>
                 </div>
-                <Button 
-                    ref="retryButton"
-                    type="button" 
-                    icon="pi pi-refresh" 
-                    label="Retry" 
-                    severity="secondary" 
-                    size="small"
-                    @click="retryOperation"
-                />
+                <Button ref="retryButton" type="button" icon="pi pi-refresh" label="Retry" severity="secondary" size="small" @click="retryOperation" />
             </div>
             <p class="text-orange-700 text-sm mt-2">{{ errorMessage }}</p>
         </div>
-        
+
         <div v-else>
-            <MegaMenu 
-                ref="menuRef"
-                :model="model" 
-                :orientation="orientation"
-                @menu-click="emit('menu-click', $event)"
-                @menu-mouseenter="emit('menu-mouseenter', $event)"
-            />
+            <MegaMenu ref="menuRef" :model="model" :orientation="orientation" @menu-click="emit('menu-click', $event)" @menu-mouseenter="emit('menu-mouseenter', $event)" />
         </div>
     </div>
 </template>
