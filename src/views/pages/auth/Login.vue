@@ -1,7 +1,7 @@
 <script setup>
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
 import AuthService from '@/service/AuthService';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 
@@ -15,6 +15,23 @@ const user_code = ref('');
 const password = ref('');
 const checked = ref(false);
 const loading = ref(false);
+
+// โหลดข้อมูลที่จำไว้เมื่อ component mount
+onMounted(() => {
+    const savedCredentials = localStorage.getItem('rememberedCredentials');
+    if (savedCredentials) {
+        try {
+            const credentials = JSON.parse(savedCredentials);
+            provider_name.value = credentials.provider_name || '';
+            database_name.value = credentials.database_name || '';
+            user_code.value = credentials.user_code || '';
+            password.value = credentials.password || '';
+            checked.value = true;
+        } catch (error) {
+            console.error('Failed to load saved credentials:', error);
+        }
+    }
+});
 
 // Login function
 const handleLogin = async () => {
@@ -45,6 +62,21 @@ const handleLogin = async () => {
 
             // บันทึก provider และ database context
             AuthService.saveLoginContext(provider_name.value, database_name.value);
+
+            // จัดการ Remember Me
+            if (checked.value) {
+                // บันทึกข้อมูลเข้าสู่ระบบ
+                const credentials = {
+                    provider_name: provider_name.value,
+                    database_name: database_name.value,
+                    user_code: user_code.value,
+                    password: password.value
+                };
+                localStorage.setItem('rememberedCredentials', JSON.stringify(credentials));
+            } else {
+                // ลบข้อมูลที่บันทึกไว้
+                localStorage.removeItem('rememberedCredentials');
+            }
 
             // ดึงสิทธิ์ผู้ใช้
             const permissionResult = await AuthService.fetchUserPermission(user_code.value, provider_name.value, database_name.value);
@@ -117,12 +149,12 @@ const handleLogin = async () => {
                     <form @submit.prevent="handleLogin">
                         <div class="mb-6">
                             <label for="provider" class="block text-surface-900 dark:text-surface-0 font-medium mb-2">Provider Name</label>
-                            <InputText id="provider" type="text" v-model="provider_name" class="w-full md:w-[30rem]" disabled />
+                            <InputText id="provider" type="text" v-model="provider_name" class="w-full md:w-[30rem]"  />
                         </div>
 
                         <div class="mb-6">
                             <label for="database" class="block text-surface-900 dark:text-surface-0 font-medium mb-2">Database Name</label>
-                            <InputText id="database" type="text" v-model="database_name" class="w-full md:w-[30rem]" disabled />
+                            <InputText id="database" type="text" v-model="database_name" class="w-full md:w-[30rem]"  />
                         </div>
 
                         <div class="mb-6">

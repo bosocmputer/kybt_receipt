@@ -51,6 +51,7 @@ const combinedDetails = computed(() => {
                 item_code: item.item_code,
                 item_name: item.item_name,
                 unit_code: item.unit_code,
+                item_year: item.item_year || '', // เพิ่ม item_year จาก SO
                 so_qty: parseInt(item.qty) || 0,
                 received_qty: 0,
                 details: [] // เก็บรายละเอียดแต่ละ barcode/ปี
@@ -117,6 +118,10 @@ const combinedDetails = computed(() => {
                         <label class="text-sm text-muted-color">สาขา</label>
                         <p class="font-semibold">{{ document?.branch_code }}</p>
                     </div>
+                    <div v-if="document?.remark" class="md:col-span-3">
+                        <label class="text-sm text-muted-color">หมายเหตุ</label>
+                        <p class="font-semibold">{{ document?.remark }}</p>
+                    </div>
                 </div>
             </div>
 
@@ -139,6 +144,7 @@ const combinedDetails = computed(() => {
                                     <div class="flex items-center gap-2 mb-1">
                                         <span class="font-semibold text-lg text-primary">{{ item.item_code }}</span>
                                         <Tag :value="item.unit_code" severity="secondary" class="text-sm" />
+                                        <Tag v-if="item.item_year" :value="`ปี ${item.item_year}`" severity="warning" class="text-sm" />
                                     </div>
                                     <div class="text-base text-muted-color truncate">{{ item.item_name }}</div>
                                 </div>
@@ -188,11 +194,14 @@ const combinedDetails = computed(() => {
 
                         <!-- Mobile Layout -->
                         <div class="lg:hidden">
-                            <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center justify-between mb-2">
                                 <div class="font-semibold text-lg text-primary">{{ item.item_code }}</div>
                                 <Tag :value="item.unit_code" severity="secondary" class="text-base" />
                             </div>
-                            <div class="text-base text-muted-color mb-3 truncate">{{ item.item_name }}</div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="text-base text-muted-color truncate flex-1">{{ item.item_name }}</div>
+                                <Tag v-if="item.item_year" :value="`ปี ${item.item_year}`" severity="warning" class="text-sm" />
+                            </div>
 
                             <div class="grid grid-cols-3 gap-3 mb-3 pb-3 border-b border-surface-200 dark:border-surface-700">
                                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded p-3 text-center">
